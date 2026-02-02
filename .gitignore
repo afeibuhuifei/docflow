@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Database
+data/database/*.db
+
+# Uploaded documents
+data/documents/*
+!data/documents/.gitkeep
+
+# OnlyOffice data
+data/onlyoffice/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor directories
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temp files
+uploads/temp/*
+!uploads/temp/.gitkeep

@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # 后端 API 服务
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data/documents:/app/data/documents
+      - ./data/database:/app/data/database
+    environment:
+      - NODE_ENV=production
+      - JWT_SECRET=docflow_secret_key_2024
+      - DB_PATH=./data/database/docflow.db
+      - DOCUMENTS_PATH=./data/documents
+      - ONLYOFFICE_URL=http://onlyoffice
+      - CORS_ORIGIN=http://localhost:8080
+    depends_on:
+      - onlyoffice
+    restart: unless-stopped
+
+  # 前端服务
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # OnlyOffice 文档服务
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    ports:
+      - "9000:80"
+    environment:
+      - JWT_ENABLED=false
+    volumes:
+      - ./data/onlyoffice/logs:/var/log/onlyoffice
+      - ./data/onlyoffice/data:/var/www/onlyoffice/Data
+    restart: unless-stopped
