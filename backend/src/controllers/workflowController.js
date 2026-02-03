@@ -119,10 +119,6 @@ async function rejectTask(req, res) {
         const { nodeId } = req.params;
         const { comment } = req.body;
 
-        if (!comment) {
-            return res.status(400).json({ error: '退回时必须填写批注' });
-        }
-
         const node = WorkflowNode.findById(nodeId);
 
         if (!node) {
@@ -150,11 +146,14 @@ async function rejectTask(req, res) {
         const doc = Document.findById(node.document_id);
 
         // 通知上传者
+        const messageText = comment
+            ? `您的文档被退回: ${doc.title}，原因: ${comment}`
+            : `您的文档被退回: ${doc.title}`;
         const notificationId = Notification.create({
             userId: doc.uploader_id,
             documentId: node.document_id,
             type: 'doc_rejected',
-            message: `您的文档被退回: ${doc.title}，原因: ${comment}`
+            message: messageText
         });
 
         if (io) {

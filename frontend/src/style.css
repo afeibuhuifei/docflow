@@ -1,3 +1,51 @@
+/* DocFlow - Modern Business Design System */
+:root {
+  /* Colors - Neutral & Professional */
+  --color-bg-primary: #f8f9fc;
+  --color-bg-secondary: #ffffff;
+  --color-bg-tertiary: #f1f3f9;
+  
+  --color-text-primary: #1a1d21;
+  --color-text-secondary: #5c6370;
+  --color-text-tertiary: #9ca3af;
+  
+  --color-border: #e5e7eb;
+  --color-border-light: #f0f1f3;
+  
+  /* Accent Colors */
+  --color-accent: #3b5998;
+  --color-accent-light: #eef2fa;
+  --color-accent-hover: #2d4373;
+  
+  --color-success: #10b981;
+  --color-success-light: #ecfdf5;
+  --color-warning: #f59e0b;
+  --color-warning-light: #fffbeb;
+  --color-danger: #ef4444;
+  --color-danger-light: #fef2f2;
+  
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  
+  /* Shadow */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08);
+  
+  /* Transition */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -10,7 +58,11 @@ html, body, #app {
 }
 
 body {
-  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -20,16 +72,97 @@ a {
   color: inherit;
 }
 
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: var(--color-border);
   border-radius: 3px;
 }
 
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+}
+
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: transparent;
+}
+
+/* Element Plus Overrides */
+.el-button {
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  transition: var(--transition-fast);
+}
+
+.el-button--primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.el-button--primary:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.el-button--success {
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.el-button--danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.el-card {
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.el-card__header {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.el-card__body {
+  padding: var(--spacing-md);
+}
+
+.el-tag {
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+.el-dialog {
+  border-radius: var(--radius-lg);
+}
+
+.el-input__wrapper {
+  border-radius: var(--radius-md);
+}
+
+.el-menu {
+  border: none;
+}
+
+/* Utility Classes */
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-tertiary {
+  color: var(--color-text-tertiary);
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.font-semibold {
+  font-weight: 600;
 }

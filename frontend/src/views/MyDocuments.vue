@@ -1,54 +1,76 @@
 <template>
   <div class="my-documents-page">
-    <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>我发起的文档</span>
-          <el-button type="primary" :icon="Upload" @click="showUploadDialog = true">
-            上传文档
-          </el-button>
-        </div>
-      </template>
+    <div class="page-card">
+      <div class="card-header">
+        <h2>我发起的文档</h2>
+        <button class="btn btn-primary" @click="showUploadDialog = true">
+          上传文档
+        </button>
+      </div>
       
       <el-table :data="documents" v-loading="loading" empty-text="暂无文档">
-        <el-table-column prop="title" label="文档标题" min-width="300" />
-        <el-table-column label="状态" width="100">
+        <el-table-column prop="title" label="文档标题" min-width="200" />
+        
+        <!-- 工作流进度列 -->
+        <el-table-column label="审批流程" min-width="280">
           <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)">
-              {{ getStatusText(row.status) }}
-            </el-tag>
+            <div class="workflow-progress" v-if="row.workflow && row.workflow.length > 0">
+              <div 
+                v-for="(node, index) in row.workflow" 
+                :key="node.id"
+                class="workflow-node"
+              >
+                <div class="node-indicator" :class="getNodeClass(node)">
+                  {{ index + 1 }}
+                </div>
+                <div class="node-info">
+                  <span class="node-type">{{ node.stepType === 'proofread' ? '校对' : '批准' }}</span>
+                  <span class="node-user">{{ node.assigneeName }}</span>
+                </div>
+                <span v-if="index < row.workflow.length - 1" class="node-arrow"></span>
+              </div>
+            </div>
+            <span v-else class="text-muted">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" width="180">
+        
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <span class="status-badge" :class="row.status">
+              {{ getStatusText(row.status) }}
+            </span>
+          </template>
+        </el-table-column>
+        
+        <el-table-column label="创建时间" width="160">
           <template #default="{ row }">
             {{ formatTime(row.createdAt) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="$router.push(`/document/${row.id}`)">
+            <button class="btn-link" @click="$router.push(`/document/${row.id}`)">
               查看
-            </el-button>
-            <el-button 
+            </button>
+            <button 
               v-if="row.status === 'draft'" 
-              type="success" 
-              link 
+              class="btn-link success"
               @click="handleSubmit(row)"
             >
               提交
-            </el-button>
-            <el-button 
+            </button>
+            <button 
               v-if="row.status === 'draft'" 
-              type="danger" 
-              link 
+              class="btn-link danger"
               @click="handleDelete(row)"
             >
               删除
-            </el-button>
+            </button>
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
+    </div>
     
     <!-- 上传对话框 -->
     <el-dialog v-model="showUploadDialog" title="上传文档" width="500px" @closed="resetForm">
@@ -97,10 +119,10 @@
       </el-form>
       
       <template #footer>
-        <el-button @click="showUploadDialog = false">取消</el-button>
-        <el-button type="primary" :loading="uploading" @click="handleUpload">
-          上传并提交
-        </el-button>
+        <button class="btn btn-secondary" @click="showUploadDialog = false">取消</button>
+        <button class="btn btn-primary" :disabled="uploading" @click="handleUpload">
+          {{ uploading ? '上传中...' : '上传并提交' }}
+        </button>
       </template>
     </el-dialog>
   </div>
@@ -108,7 +130,6 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { Upload } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 import api from '../api'
@@ -145,17 +166,6 @@ function formatTime(time) {
   return new Date(time).toLocaleString('zh-CN')
 }
 
-function getStatusType(status) {
-  const types = {
-    draft: 'info',
-    proofreading: 'warning',
-    approving: '',
-    archived: 'success',
-    rejected: 'danger'
-  }
-  return types[status] || 'info'
-}
-
 function getStatusText(status) {
   const texts = {
     draft: '草稿',
@@ -167,9 +177,15 @@ function getStatusText(status) {
   return texts[status] || status
 }
 
+function getNodeClass(node) {
+  if (node.status === 'approved') return 'completed'
+  if (node.status === 'in_progress') return 'active'
+  if (node.status === 'rejected') return 'rejected'
+  return 'pending'
+}
+
 function handleFileChange(file) {
   form.value.file = file.raw
-  // 自动填写文件名作为标题（去除扩展名）
   if (!form.value.title && file.name) {
     const nameWithoutExt = file.name.replace(/\.(doc|docx)$/i, '')
     form.value.title = nameWithoutExt
@@ -212,8 +228,6 @@ async function handleUpload() {
     formData.append('approver_id', form.value.approverId)
     
     const result = await api.documents.upload(formData)
-    
-    // 立即提交
     await api.documents.submit(result.id)
     
     ElMessage.success('文档上传并提交成功')
@@ -277,12 +291,165 @@ onMounted(async () => {
 
 <style scoped>
 .my-documents-page {
-  max-width: 1200px;
+  max-width: 1400px;
+}
+
+.page-card {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  overflow: hidden;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.card-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Workflow Progress */
+.workflow-progress {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.workflow-node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.node-indicator {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.node-indicator.pending {
+  background: var(--color-border);
+  color: var(--color-text-tertiary);
+}
+
+.node-indicator.active {
+  background: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-light);
+}
+
+.node-indicator.completed {
+  background: var(--color-success);
+}
+
+.node-indicator.rejected {
+  background: var(--color-danger);
+}
+
+.node-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.node-type {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+}
+
+.node-user {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.node-arrow {
+  width: 16px;
+  height: 2px;
+  background: var(--color-border);
+  margin: 0 4px;
+}
+
+/* Status Badge */
+.status-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-badge.draft { background: var(--color-bg-tertiary); color: var(--color-text-secondary); }
+.status-badge.proofreading { background: var(--color-warning-light); color: var(--color-warning); }
+.status-badge.approving { background: var(--color-accent-light); color: var(--color-accent); }
+.status-badge.archived { background: var(--color-success-light); color: var(--color-success); }
+.status-badge.rejected { background: var(--color-danger-light); color: var(--color-danger); }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.btn-secondary {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  margin-right: 8px;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
+
+.btn-link.success { color: var(--color-success); }
+.btn-link.danger { color: var(--color-danger); }
+
+.text-muted {
+  color: var(--color-text-tertiary);
 }
 </style>

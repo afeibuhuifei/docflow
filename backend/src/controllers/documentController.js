@@ -4,6 +4,16 @@ const { v4: uuidv4 } = require('uuid');
 const config = require('../config');
 const { Document, WorkflowNode, Notification } = require('../models');
 
+// 修复 multer 中文文件名编码问题
+function decodeFilename(filename) {
+    try {
+        // multer 将文件名按 Latin-1 解码，需要转回 UTF-8
+        return Buffer.from(filename, 'latin1').toString('utf8');
+    } catch (e) {
+        return filename;
+    }
+}
+
 // WebSocket 实例 (将在 index.js 中设置)
 let io = null;
 
@@ -30,8 +40,11 @@ async function uploadDocument(req, res) {
             return res.status(400).json({ error: '请选择校对人员和批准人员' });
         }
 
+        // 修复中文文件名编码
+        const originalFilename = decodeFilename(req.file.originalname);
+
         // 生成存储文件名
-        const ext = path.extname(req.file.originalname);
+        const ext = path.extname(originalFilename);
         const storedFilename = `${uuidv4()}${ext}`;
         const filePath = path.join(config.storage.documentsPath, storedFilename);
 
@@ -48,7 +61,7 @@ async function uploadDocument(req, res) {
         // 创建文档记录
         const documentId = Document.create({
             title,
-            originalFilename: req.file.originalname,
+            originalFilename: originalFilename,
             storedFilename,
             filePath,
             uploaderId: req.user.id
@@ -130,14 +143,25 @@ async function submitDocument(req, res) {
 async function getMyDocuments(req, res) {
     try {
         const documents = Document.findByUploader(req.user.id);
-        res.json(documents.map(d => ({
-            id: d.id,
-            title: d.title,
-            originalFilename: d.original_filename,
-            status: d.status,
-            createdAt: d.created_at,
-            updatedAt: d.updated_at
-        })));
+        const result = documents.map(d => {
+            // 获取该文档的工作流节点
+            const nodes = WorkflowNode.findByDocument(d.id);
+            return {
+                id: d.id,
+                title: d.title,
+                originalFilename: d.original_filename,
+                status: d.status,
+                createdAt: d.created_at,
+                updatedAt: d.updated_at,
+                workflow: nodes.map(n => ({
+                    id: n.id,
+                    stepType: n.step_type,
+                    assigneeName: n.assignee_name,
+                    status: n.status
+                }))
+            };
+        });
+        res.json(result);
     } catch (err) {
         console.error('获取文档列表错误:', err);
         res.status(500).json({ error: '服务器内部错误' });

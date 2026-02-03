@@ -6,6 +6,9 @@ const authMiddleware = require('../middleware/auth');
 // 获取编辑器配置
 router.get('/config/:docId', authMiddleware, onlyofficeController.getEditorConfig);
 
+// 强制保存文档
+router.post('/forcesave/:docId', authMiddleware, onlyofficeController.forceSave);
+
 // OnlyOffice 保存回调（不需要认证，由 OnlyOffice 服务调用）
 router.post('/callback', onlyofficeController.handleCallback);
 

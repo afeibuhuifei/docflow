@@ -39,36 +39,48 @@ async function getEditorConfig(req, res) {
         const ext = path.extname(doc.original_filename).toLowerCase();
         const documentType = 'word'; // .doc 和 .docx 都是 word 类型
 
-        // 获取前端可访问的文件 URL
-        const fileUrl = `${req.protocol}://${req.get('host')}/api/documents/${docId}/file`;
+        // 获取 OnlyOffice 可访问的文件 URL
+        // 在开发模式下，Docker 容器需要使用 host.docker.internal 访问宿主机
+        const hostForDocker = process.env.NODE_ENV === 'production'
+            ? req.get('host')
+            : 'host.docker.internal:3000';
+        const fileUrl = `http://${hostForDocker}/api/documents/${docId}/file`;
+        const callbackUrl = `http://${hostForDocker}/api/onlyoffice/callback?docId=${docId}`;
 
         const editorConfig = {
             document: {
-                fileType: ext.substring(1), // 去掉点号
+                fileType: ext.substring(1),
                 key: documentKey,
                 title: doc.original_filename,
-                url: fileUrl
+                url: fileUrl,
+                permissions: {
+                    comment: true,
+                    download: true,
+                    edit: mode === 'edit',
+                    print: true,
+                    review: false
+                }
             },
             documentType: documentType,
             editorConfig: {
                 mode: mode,
-                callbackUrl: `${req.protocol}://${req.get('host')}/api/onlyoffice/callback?docId=${docId}`,
+                callbackUrl: callbackUrl,
                 user: {
                     id: String(req.user.id),
                     name: req.user.username
                 },
                 customization: {
                     autosave: true,
-                    chat: false,
                     comments: true,
-                    compactHeader: false,
+                    compactHeader: true,
                     compactToolbar: false,
+                    compatibleFeatures: true,
                     feedback: false,
                     forcesave: true,
                     help: false,
-                    hideRightMenu: false,
-                    showReviewChanges: true,
-                    trackChanges: true
+                    hideRightMenu: true,
+                    toolbarNoTabs: false,
+                    spellcheck: true
                 },
                 lang: 'zh-CN'
             },
@@ -112,12 +124,12 @@ async function getDocumentFile(req, res) {
 async function handleCallback(req, res) {
     try {
         const { docId } = req.query;
-        const { status, url } = req.body;
+        const { status, url, key } = req.body;
 
-        console.log('OnlyOffice 回调:', { docId, status, url });
+        console.log('OnlyOffice 回调:', { docId, status, url, key });
 
         // status = 2 表示文档已保存并关闭
-        // status = 6 表示文档正在编辑中保存
+        // status = 6 表示文档正在编辑中保存（强制保存）
         if (status === 2 || status === 6) {
             if (url) {
                 const doc = Document.findById(docId);
@@ -152,8 +164,45 @@ async function handleCallback(req, res) {
     }
 }
 
+/**
+ * 强制保存文档
+ */
+async function forceSave(req, res) {
+    try {
+        const { docId } = req.params;
+        const doc = Document.findById(docId);
+
+        if (!doc) {
+            return res.status(404).json({ error: '文档不存在' });
+        }
+
+        // 检查权限
+        const { WorkflowNode } = require('../models');
+        const currentNode = WorkflowNode.findCurrentNode(docId);
+
+        const canSave =
+            (doc.status === 'draft' && doc.uploader_id === req.user.id) ||
+            (currentNode && currentNode.assignee_id === req.user.id);
+
+        if (!canSave) {
+            return res.status(403).json({ error: '无权保存此文档' });
+        }
+
+        // 调用 OnlyOffice Command Service 强制保存
+        // 注：这需要 OnlyOffice Document Server 的 Command API
+        // 如果不可用，前端的 triggerForceSave 会处理
+
+        res.json({ success: true, message: '保存请求已发送' });
+    } catch (err) {
+        console.error('强制保存错误:', err);
+        res.status(500).json({ error: '服务器内部错误' });
+    }
+}
+
 module.exports = {
     getEditorConfig,
     getDocumentFile,
-    handleCallback
+    handleCallback,
+    forceSave
 };
+

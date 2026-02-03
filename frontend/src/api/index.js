@@ -73,7 +73,8 @@ const api = {
     },
 
     onlyoffice: {
-        getConfig: (docId) => http.get(`/onlyoffice/config/${docId}`)
+        getConfig: (docId, mode = 'edit') => http.get(`/onlyoffice/config/${docId}`, { params: { mode } }),
+        forceSave: (docId) => http.post(`/onlyoffice/forcesave/${docId}`)
     }
 }
 

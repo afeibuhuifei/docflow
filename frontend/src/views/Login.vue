@@ -1,5 +1,5 @@
 <template>
-  <div class="login-container">
+  <div class="login-page">
     <div class="login-card">
       <div class="login-header">
         <h1>DocFlow</h1>
@@ -17,7 +17,6 @@
           <el-input 
             v-model="form.username" 
             placeholder="用户名"
-            prefix-icon="User"
             size="large"
           />
         </el-form-item>
@@ -27,7 +26,6 @@
             v-model="form.password" 
             type="password" 
             placeholder="密码"
-            prefix-icon="Lock"
             size="large"
             show-password
             @keyup.enter="handleLogin"
@@ -35,15 +33,14 @@
         </el-form-item>
         
         <el-form-item>
-          <el-button 
-            type="primary" 
-            size="large" 
-            :loading="loading" 
+          <button 
+            type="submit"
             class="login-btn"
-            @click="handleLogin"
+            :disabled="loading"
+            @click.prevent="handleLogin"
           >
-            登 录
-          </el-button>
+            {{ loading ? '登录中...' : '登 录' }}
+          </button>
         </el-form-item>
       </el-form>
       
@@ -96,55 +93,64 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-.login-container {
+.login-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1e2530;
 }
 
 .login-card {
-  width: 400px;
+  width: 380px;
   padding: 40px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 32px;
 }
 
 .login-header h1 {
-  font-size: 32px;
-  color: #333;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text-primary);
   margin-bottom: 8px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
 }
 
 .login-header p {
-  color: #666;
+  color: var(--color-text-tertiary);
   font-size: 14px;
 }
 
 .login-form {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .login-btn {
   width: 100%;
-  height: 48px;
-  font-size: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  height: 44px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--color-accent);
+  color: #fff;
   border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition-fast);
 }
 
-.login-btn:hover {
-  background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+.login-btn:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.login-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .login-footer {
@@ -152,7 +158,7 @@ async function handleLogin() {
 }
 
 .login-footer p {
-  color: #999;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 </style>
